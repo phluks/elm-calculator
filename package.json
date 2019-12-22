@@ -1,0 +1,14 @@
+{
+  "name": "my-elm-calc",
+  "version": "1.0.0",
+  "description": "Elm Calculater",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Olav Cleemann",
+  "license": "ISC",
+  "devDependencies": {
+    "elm-live": "^4.0.1"
+  }
+}
