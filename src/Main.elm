@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, h1, text)
+import Html exposing (Html, div, h1, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 
@@ -12,14 +12,16 @@ import Html.Events exposing (onClick)
 
 type alias Model =
     { stack : List Float
-    , currentNum : Float
+    , currentNum : String
+    , error : Maybe String
     }
 
 
 initialModel : Model
 initialModel =
     { stack = []
-    , currentNum = 0
+    , currentNum = "0"
+    , error = Nothing
     }
 
 
@@ -34,6 +36,7 @@ type Msg
     | Back
     | Enter
     | InputOperator Operator
+    | SetDecimal
 
 
 type Operator
@@ -51,22 +54,46 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         InputNumber num ->
-            { model | currentNum = (model.currentNum * 10) + num }
+            if model.currentNum == "0" then
+                { model | currentNum = String.fromFloat num }
+
+            else
+                { model | currentNum = model.currentNum ++ String.fromFloat num }
 
         Clear ->
-            { model | currentNum = 0 }
+            { model | currentNum = "0" }
 
         ClearAll ->
-            { model | currentNum = 0, stack = [] }
+            initialModel
 
         Back ->
-            { model | currentNum = toFloat <| floor <| model.currentNum / 10 }
+            let
+                newNum =
+                    String.dropRight 1 model.currentNum
+            in
+            { model
+                | currentNum =
+                    if String.isEmpty newNum then
+                        "0"
+
+                    else
+                        newNum
+            }
 
         Enter ->
-            { model
-                | stack = model.currentNum :: model.stack
-                , currentNum = 0
-            }
+            let
+                maybeNumber =
+                    String.toFloat model.currentNum
+            in
+            case maybeNumber of
+                Nothing ->
+                    { model | error = Just "Parse Error!" }
+
+                Just num ->
+                    { model
+                        | stack = num :: model.stack
+                        , currentNum = "0"
+                    }
 
         InputOperator operator ->
             case model.stack of
@@ -78,13 +105,29 @@ update msg model =
                         op =
                             operatorFunction operator
 
-                        newNum =
-                            op x model.currentNum
+                        maybeNumber =
+                            String.toFloat model.currentNum
                     in
-                    { model
-                        | stack = xs
-                        , currentNum = newNum
-                    }
+                    case maybeNumber of
+                        Nothing ->
+                            { model | error = Just "Parse Error!" }
+
+                        Just num ->
+                            let
+                                newNum =
+                                    op x num
+                            in
+                            { model
+                                | stack = xs
+                                , currentNum = String.fromFloat newNum
+                            }
+
+        SetDecimal ->
+            if String.contains "." model.currentNum then
+                model
+
+            else
+                { model | currentNum = model.currentNum ++ "." }
 
 
 operatorFunction : Operator -> (Float -> Float -> Float)
@@ -156,10 +199,19 @@ cell attr size color content =
         [ text content ]
 
 
-inputBox : Float -> Html Msg
+stackBox : Float -> Html Msg
+stackBox num =
+    div
+        [ class "input-box"
+        ]
+        [ text <| String.fromFloat num
+        ]
+
+
+inputBox : Html Msg -> Html Msg
 inputBox num =
     div [ class "input-box" ]
-        [ text <| String.fromFloat num ]
+        [ num ]
 
 
 view : Model -> Html Msg
@@ -168,8 +220,14 @@ view model =
         [ h1 [ class "h1" ] [ text "RPN Calculator" ]
         , div
             [ class "calculator" ]
-            (List.map inputBox (List.reverse model.stack)
-                ++ [ inputBox model.currentNum
+            (List.map stackBox (List.reverse model.stack)
+                ++ [ inputBox <|
+                        case model.error of
+                            Nothing ->
+                                text model.currentNum
+
+                            Just err ->
+                                span [ class "error" ] [ text err ]
                    , section
                    ]
             )
@@ -197,7 +255,7 @@ section =
         , cell (onClick (InputNumber 3)) Single White "3"
         , cell (onClick (InputOperator Add)) Single Yellow "+"
         , cell (onClick (InputNumber 0)) Single White "0"
-        , cell (onClick (InputNumber 0)) Single White "."
+        , cell (onClick SetDecimal) Single White "."
         , cell (onClick Enter) Double Yellow "Enter"
         ]
 
