@@ -37,6 +37,7 @@ type Msg
     | Enter
     | InputOperator Operator
     | SetDecimal
+    | SetSign
 
 
 type Operator
@@ -128,6 +129,22 @@ update msg model =
 
             else
                 { model | currentNum = model.currentNum ++ "." }
+
+        SetSign ->
+            -- don't allow negative zero
+            if model.currentNum == "0" then
+                model
+                -- from negative to positive
+
+            else if String.startsWith "-" model.currentNum then
+                { model
+                    | currentNum =
+                        String.dropLeft 1 model.currentNum
+                }
+                -- from positive to negative
+
+            else
+                { model | currentNum = "-" ++ model.currentNum }
 
 
 operatorFunction : Operator -> (Float -> Float -> Float)
@@ -256,7 +273,8 @@ section =
         , cell (onClick (InputOperator Add)) Single Yellow "+"
         , cell (onClick (InputNumber 0)) Single White "0"
         , cell (onClick SetDecimal) Single White "."
-        , cell (onClick Enter) Double Yellow "Enter"
+        , cell (onClick SetSign) Single White "+/-"
+        , cell (onClick Enter) Single Yellow "Enter"
         ]
 
 
