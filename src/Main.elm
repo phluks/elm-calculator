@@ -14,6 +14,7 @@ type alias Model =
     { stack : List Float
     , currentNum : String
     , error : Maybe String
+    , dirty : Bool
     }
 
 
@@ -22,6 +23,7 @@ initialModel =
     { stack = []
     , currentNum = "0"
     , error = Nothing
+    , dirty = False
     }
 
 
@@ -58,11 +60,17 @@ update msg model =
             if model.currentNum == "0" then
                 { model | currentNum = String.fromFloat num }
 
+            else if model.dirty then
+                { model
+                    | currentNum = String.fromFloat num
+                    , dirty = False
+                }
+
             else
                 { model | currentNum = model.currentNum ++ String.fromFloat num }
 
         Clear ->
-            { model | currentNum = "0" }
+            { model | currentNum = "0", dirty = False }
 
         ClearAll ->
             initialModel
@@ -93,7 +101,7 @@ update msg model =
                 Just num ->
                     { model
                         | stack = num :: model.stack
-                        , currentNum = "0"
+                        , dirty = True
                     }
 
         InputOperator operator ->
@@ -121,6 +129,7 @@ update msg model =
                             { model
                                 | stack = xs
                                 , currentNum = String.fromFloat newNum
+                                , dirty = False
                             }
 
         SetDecimal ->
