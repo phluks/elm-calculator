@@ -1,9 +1,13 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Events exposing (onKeyDown)
 import Html exposing (Html, div, h1, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode
+import Keyboard.Event exposing (KeyboardEvent, decodeKeyboardEvent)
+import Keyboard.Key as KK
 
 
 
@@ -40,6 +44,7 @@ type Msg
     | InputOperator Operator
     | SetDecimal
     | SetSign
+    | HandleKeyboardEvent KeyboardEvent
 
 
 type Operator
@@ -53,41 +58,53 @@ type Operator
 -- Update
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InputNumber num ->
             if model.currentNum == "0" then
-                { model | currentNum = String.fromFloat num }
+                ( { model | currentNum = String.fromFloat num }
+                , Cmd.none
+                )
 
             else if model.dirty then
-                { model
+                ( { model
                     | currentNum = String.fromFloat num
                     , dirty = False
-                }
+                  }
+                , Cmd.none
+                )
 
             else
-                { model | currentNum = model.currentNum ++ String.fromFloat num }
+                ( { model | currentNum = model.currentNum ++ String.fromFloat num }
+                , Cmd.none
+                )
 
         Clear ->
-            { model | currentNum = "0", dirty = False }
+            ( { model | currentNum = "0", dirty = False }
+            , Cmd.none
+            )
 
         ClearAll ->
-            initialModel
+            ( initialModel
+            , Cmd.none
+            )
 
         Back ->
             let
                 newNum =
                     String.dropRight 1 model.currentNum
             in
-            { model
+            ( { model
                 | currentNum =
                     if String.isEmpty newNum then
                         "0"
 
                     else
                         newNum
-            }
+              }
+            , Cmd.none
+            )
 
         Enter ->
             let
@@ -96,18 +113,22 @@ update msg model =
             in
             case maybeNumber of
                 Nothing ->
-                    { model | error = Just "Parse Error!" }
+                    ( { model | error = Just "Parse Error!" }
+                    , Cmd.none
+                    )
 
                 Just num ->
-                    { model
+                    ( { model
                         | stack = num :: model.stack
                         , dirty = True
-                    }
+                      }
+                    , Cmd.none
+                    )
 
         InputOperator operator ->
             case model.stack of
                 [] ->
-                    model
+                    ( model, Cmd.none )
 
                 x :: xs ->
                     let
@@ -119,41 +140,107 @@ update msg model =
                     in
                     case maybeNumber of
                         Nothing ->
-                            { model | error = Just "Parse Error!" }
+                            ( { model | error = Just "Parse Error!" }
+                            , Cmd.none
+                            )
 
                         Just num ->
                             let
                                 newNum =
                                     op x num
                             in
-                            { model
+                            ( { model
                                 | stack = xs
                                 , currentNum = String.fromFloat newNum
                                 , dirty = False
-                            }
+                              }
+                            , Cmd.none
+                            )
 
         SetDecimal ->
             if String.contains "." model.currentNum then
-                model
+                ( model, Cmd.none )
 
             else
-                { model | currentNum = model.currentNum ++ "." }
+                ( { model | currentNum = model.currentNum ++ "." }
+                , Cmd.none
+                )
 
         SetSign ->
             -- don't allow negative zero
             if model.currentNum == "0" then
-                model
+                ( model, Cmd.none )
                 -- from negative to positive
 
             else if String.startsWith "-" model.currentNum then
-                { model
+                ( { model
                     | currentNum =
                         String.dropLeft 1 model.currentNum
-                }
+                  }
+                , Cmd.none
+                )
                 -- from positive to negative
 
             else
-                { model | currentNum = "-" ++ model.currentNum }
+                ( { model | currentNum = "-" ++ model.currentNum }
+                , Cmd.none
+                )
+
+        HandleKeyboardEvent event ->
+            case event.keyCode of
+                KK.Add ->
+                    update (InputOperator Add) model
+
+                KK.Subtract ->
+                    update (InputOperator Sub) model
+
+                KK.Multiply ->
+                    update (InputOperator Mult) model
+
+                KK.Divide ->
+                    update (InputOperator Div) model
+
+                KK.Decimal ->
+                    update SetDecimal model
+
+                KK.Enter ->
+                    update Enter model
+
+                KK.Backspace ->
+                    update Back model
+
+                KK.NumpadZero ->
+                    update (InputNumber 0) model
+
+                KK.NumpadNine ->
+                    update (InputNumber 9) model
+
+                KK.NumpadOne ->
+                    update (InputNumber 1) model
+
+                KK.NumpadTwo ->
+                    update (InputNumber 2) model
+
+                KK.NumpadThree ->
+                    update (InputNumber 3) model
+
+                KK.NumpadFour ->
+                    update (InputNumber 4) model
+
+                KK.NumpadFive ->
+                    update (InputNumber 5) model
+
+                KK.NumpadSix ->
+                    update (InputNumber 6) model
+
+                KK.NumpadSeven ->
+                    update (InputNumber 7) model
+
+                KK.NumpadEight ->
+                    update (InputNumber 8) model
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 operatorFunction : Operator -> (Float -> Float -> Float)
@@ -287,14 +374,31 @@ section =
         ]
 
 
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( initialModel
+    , Cmd.none
+    )
+
+
 
 -- Main
 
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
-        { init = initialModel
+    Browser.element
+        { init = init
         , view = view
         , update = update
+        , subscriptions = subscriptions
         }
+
+
+
+-- subscriptions
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    onKeyDown (Decode.map HandleKeyboardEvent decodeKeyboardEvent)
