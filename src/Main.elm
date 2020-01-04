@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Main exposing (Model, Msg, init, main, update, view)
 
 import Browser
 import Browser.Events exposing (onKeyDown)
