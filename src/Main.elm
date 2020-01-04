@@ -187,60 +187,77 @@ update msg model =
                 )
 
         HandleKeyboardEvent event ->
-            case event.keyCode of
-                KK.Add ->
-                    update (InputOperator Add) model
+            if event.ctrlKey && event.shiftKey then
+                case event.keyCode of
+                    KK.Backspace ->
+                        update ClearAll model
 
-                KK.Subtract ->
-                    update (InputOperator Sub) model
+                    _ ->
+                        ( model, Cmd.none )
 
-                KK.Multiply ->
-                    update (InputOperator Mult) model
+            else if event.ctrlKey then
+                case event.keyCode of
+                    KK.Backspace ->
+                        update Clear model
 
-                KK.Divide ->
-                    update (InputOperator Div) model
+                    _ ->
+                        ( model, Cmd.none )
 
-                KK.Decimal ->
-                    update SetDecimal model
+            else
+                case event.keyCode of
+                    KK.Add ->
+                        update (InputOperator Add) model
 
-                KK.Enter ->
-                    update Enter model
+                    KK.Subtract ->
+                        update (InputOperator Sub) model
 
-                KK.Backspace ->
-                    update Back model
+                    KK.Multiply ->
+                        update (InputOperator Mult) model
 
-                KK.NumpadZero ->
-                    update (InputNumber 0) model
+                    KK.Divide ->
+                        update (InputOperator Div) model
 
-                KK.NumpadNine ->
-                    update (InputNumber 9) model
+                    KK.Decimal ->
+                        update SetDecimal model
 
-                KK.NumpadOne ->
-                    update (InputNumber 1) model
+                    KK.Enter ->
+                        update Enter model
 
-                KK.NumpadTwo ->
-                    update (InputNumber 2) model
+                    KK.Backspace ->
+                        update Back model
 
-                KK.NumpadThree ->
-                    update (InputNumber 3) model
+                    KK.NumpadZero ->
+                        update (InputNumber 0) model
 
-                KK.NumpadFour ->
-                    update (InputNumber 4) model
+                    KK.NumpadNine ->
+                        update (InputNumber 9) model
 
-                KK.NumpadFive ->
-                    update (InputNumber 5) model
+                    KK.NumpadOne ->
+                        update (InputNumber 1) model
 
-                KK.NumpadSix ->
-                    update (InputNumber 6) model
+                    KK.NumpadTwo ->
+                        update (InputNumber 2) model
 
-                KK.NumpadSeven ->
-                    update (InputNumber 7) model
+                    KK.NumpadThree ->
+                        update (InputNumber 3) model
 
-                KK.NumpadEight ->
-                    update (InputNumber 8) model
+                    KK.NumpadFour ->
+                        update (InputNumber 4) model
 
-                _ ->
-                    ( model, Cmd.none )
+                    KK.NumpadFive ->
+                        update (InputNumber 5) model
+
+                    KK.NumpadSix ->
+                        update (InputNumber 6) model
+
+                    KK.NumpadSeven ->
+                        update (InputNumber 7) model
+
+                    KK.NumpadEight ->
+                        update (InputNumber 8) model
+
+                    _ ->
+                        ( model, Cmd.none )
 
 
 operatorFunction : Operator -> (Float -> Float -> Float)
