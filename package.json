@@ -1,10 +1,11 @@
 {
   "name": "my-elm-calc",
   "version": "1.0.0",
-  "description": "Elm Calculater",
+  "description": "Elm Calculater from the book 'Learn Elm, by example' by Ryan Frazier",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "mkdir -p dist && elm make src/Main.elm --optimize --output=dist/elm.js && cp index.html dist && cp style.css dist"
   },
   "author": "Olav Cleemann",
   "license": "ISC",
